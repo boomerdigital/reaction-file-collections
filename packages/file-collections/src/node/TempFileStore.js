@@ -28,7 +28,8 @@ export default class TempFileStore extends EventEmitter {
   constructor({
     maxFileSize = 1024 * 1024 * 20,
     osFilePath = "uploads",
-    shouldAllowRequest = () => false
+    shouldAllowRequest = () => false,
+    options
   } = {}) {
     super();
 
@@ -44,7 +45,18 @@ export default class TempFileStore extends EventEmitter {
     if (this.osFilePath.startsWith("/")) this.osFilePath = this.osFilePath.slice(1);
 
     this.uploadServer = new tus.Server();
-    this.uploadServer.datastore = new tus.FileStore({ maxFileSize, path: tusPath });
+    if(options && options["storeType"]) {
+      this.uploadServer.datastore = new tus.S3Store({
+        maxFileSize,
+        path: tusPath,
+        bucket: options.bucket,
+        accessKeyId: options.accessKeyId,
+        secretAccessKey: options.secretAccessKey,
+        region: options.region
+      });
+    } else {
+      this.uploadServer.datastore = new tus.FileStore({ maxFileSize, path: tusPath });
+    }
   }
 
   createReadStream(tempFileId) {
